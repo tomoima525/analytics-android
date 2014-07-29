@@ -28,3 +28,56 @@ ext {
   compileSdkVersion = 20
   buildToolsVersion = '20.0.0'
 }
+
+task(release) << {
+    // Verify
+    if(!VERSION_NAME.endsWith('-SNAPSHOT')) {
+      throw new GradleException("Version name ($VERSION_NAME) must end with snapshot.")
+    }
+
+    if('git status --porcelain'.execute([], project.rootDir).text.trim()) {
+      throw new GradleException("No dirty files allowed")
+    }
+
+    def releaseVersion = System.console().readLine("\nWhat is the release version ($VERSION_NAME): ")
+    if (releaseVersion.size() == 0) {
+      releaseVersion = VERSION_NAME
+    }
+
+    if(!releaseVersion[-1].isNumber()) {
+      throw new GradleException("Version name ($releaseVersion) must end with a number.")
+    }
+
+    def releaseCode = releaseVersion.replace('.', '')
+
+    println(rootProject.tasks)
+
+    tasks['clean'].execute()
+    tasks['build'].execute()
+    tasks['connectedCheck'].execute()
+    tasks['uploadArchives'].execute()
+
+    ant.propertyfile(file: "gradle.properties") {
+        entry(key: "VERSION_NAME", value: "$releaseVersion")
+        entry(key: "VERSION_CODE", value: "$releaseCode")
+    }
+
+    "git commit -a -m '[gradle-release-task] prepare release $releaseVersion'".execute([], project.rootDir)
+    "git tag $releaseVersion'".execute([], project.rootDir)
+
+    def newReleaseVersion = System.console().readLine("\nWhat is the next release version: ")
+    if (newReleaseVersion.size() == 0) {
+      throw new GradleException("Version name ($newReleaseVersion) must not be blank.")
+    }
+    if(!newReleaseVersion.endsWith('-SNAPSHOT') && !newReleaseVersion[-1].isNumber()) {
+      throw new GradleException("Version name ($releaseVersion) must end with a number or '-SNAPSHOT'.")
+    }
+    def newReleaseCode = newReleaseVersion.replace('-SNAPSHOT', '').replace('.', '')
+
+    ant.propertyfile(file: "gradle.properties") {
+        entry(key: "VERSION_NAME", value: "$newReleaseVersion")
+        entry(key: "VERSION_CODE", value: "$newReleaseCode")
+    }
+
+    "git commit -a -m '[gradle-release-task] prepare for next development version'".execute([], project.rootDir)
+}
