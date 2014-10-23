@@ -7,6 +7,7 @@ dependencies {
   //   transitive = true
   // }
   compile project(':core')
+  compile project(':localytics')
   compile project(':wear') // only for Android Wear apps
 }
 

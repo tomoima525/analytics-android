@@ -36,6 +36,7 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.localytics.android.LocalyticsSession;
 import com.segment.analytics.Analytics;
 import com.segment.analytics.Options;
 import com.segment.analytics.Properties;
@@ -45,8 +46,28 @@ public class MainActivity extends Activity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+
     setContentView(R.layout.activity_main);
     initViews();
+  }
+
+  @Override protected void onResume() {
+    super.onResume();
+
+    Analytics.with(this).onIntegrationReady(new Analytics.OnIntegrationReadyListener() {
+      @Override public void onIntegrationReady(String key, Object integration) {
+        if (key.equals("Localytics")) {
+          LocalyticsSession localyticsSession = (LocalyticsSession) integration;
+          localyticsSession.registerPush("135399917282");
+          localyticsSession.handlePushReceived(getIntent());
+        }
+      }
+    });
+  }
+
+  @Override protected void onNewIntent(Intent intent) {
+    super.onNewIntent(intent);
+    setIntent(intent);
   }
 
   private void initViews() {
@@ -108,7 +129,8 @@ public class MainActivity extends Activity {
         ((TextView) findViewById(R.id.stat_flush_count)).setText(
             "Total operations sent to bundled integrations (this is the total "
                 + "analytics events, flush events, and activity lifecycle events): "
-                + snapshot.integrationOperationCount);
+                + snapshot.integrationOperationCount
+        );
       }
     });
   }
