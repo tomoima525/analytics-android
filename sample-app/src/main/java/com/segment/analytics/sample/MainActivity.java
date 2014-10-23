@@ -36,6 +36,7 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.mixpanel.android.mpmetrics.MixpanelAPI;
 import com.segment.analytics.Analytics;
 import com.segment.analytics.Options;
 import com.segment.analytics.Properties;
@@ -47,6 +48,15 @@ public class MainActivity extends Activity {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
     initViews();
+    Analytics.with(this).onIntegrationReady(new Analytics.OnIntegrationReadyListener() {
+      @Override public void onIntegrationReady(String key, Object integration) {
+        if ("Mixpanel".equals(key)) {
+          MixpanelAPI mixpanelApi = (MixpanelAPI) integration;
+          MixpanelAPI.People people = mixpanelApi.getPeople();
+          people.initPushHandling("135399917282");
+        }
+      }
+    });
   }
 
   private void initViews() {
@@ -108,7 +118,8 @@ public class MainActivity extends Activity {
         ((TextView) findViewById(R.id.stat_flush_count)).setText(
             "Total operations sent to bundled integrations (this is the total "
                 + "analytics events, flush events, and activity lifecycle events): "
-                + snapshot.integrationOperationCount);
+                + snapshot.integrationOperationCount
+        );
       }
     });
   }
